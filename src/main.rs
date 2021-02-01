@@ -93,7 +93,7 @@ fn main() {
         frame_buf = vec![];
         let read = a.read_to_end(&mut frame_buf).unwrap();
         if read == 0 {
-            println!("ffmpeg returned no frame. lets just declare this as the end.");
+            println!("ffmpeg returned no frame. lets just assume thats the end.");
             break;
         }
         let decode_time = loop_start.elapsed();
