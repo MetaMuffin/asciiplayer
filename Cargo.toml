@@ -1,0 +1,8 @@
+[package]
+name = "asciiplayer"
+version = "0.1.0"
+authors = ["MetaMuffin <metamuffin@yandex.com>"]
+edition = "2018"
+
+[dependencies]
+term_size = "*"
