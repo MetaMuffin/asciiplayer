@@ -2,10 +2,21 @@ use std::io::Read;
 use std::process::Command;
 use std::process::Stdio;
 
+fn print_help() {
+    println!("asciiplayer:
+        Usage: asciiplayer <filename>
+        asciiplayer depends on ffmpeg, ffprobe and mpv.
+    This is free software, licenced under the GNU GPL Version 3.
+    This software is developed at https://www.github.com/MetaMuffin/asciiplayer.");
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 1 {
-        panic!("please tell me, what file to play.")
+    if args.len() != 2 {
+        return print_help()
+    }
+    if args[1] == "--help" {
+        return print_help()
     }
     let vfile = &args[1];
 
@@ -37,11 +48,14 @@ fn main() {
         .collect::<Vec<usize>>();
 
     let target_dims = match term_size::dimensions() {
-        Some((w, h)) => (w, h - 4),
+        Some((w, h)) => (w, h - 2),
         None => (80, 24),
     };
     if dims.len() != 2 {
-        panic!(format!("Could not parse video dimension of ffprobe: {:?}__{:?}", dims,res_str_buf))
+        panic!(format!(
+            "Could not parse video dimension of ffprobe: {:?}__{:?}",
+            dims, res_str_buf
+        ))
     }
     let source_dims = (dims[0], dims[1]);
     let fps = 30;
@@ -102,17 +116,14 @@ fn main() {
 
         for y in 0..(target_dims.1) {
             for x in 0..(target_dims.0) {
-                let (sx, sy) = (
-                    ((x as f64) * dim_fac.0).floor() as usize,
-                    ((y as f64) * dim_fac.1).floor() as usize,
+                let (fx, fy) = (x as f64, y as f64);
+                let vals = (
+                    buf_sample(&frame_buf, &source_dims, &dim_fac, fx, fy),
+                    buf_sample(&frame_buf, &source_dims, &dim_fac, fx + 0.5, fy),
+                    buf_sample(&frame_buf, &source_dims, &dim_fac, fx, fy + 0.5),
+                    buf_sample(&frame_buf, &source_dims, &dim_fac, fx + 0.5, fy + 0.5),
                 );
-                let val = frame_buf[(sy * source_dims.0 + sx) * 3];
-                match val {
-                    0..=64 => b += " ",
-                    65..=128 => b += ".",
-                    129..=192 => b += "c",
-                    _ => b += "@",
-                }
+                b.push(sel_char(&vals));
             }
             b += "\n";
         }
@@ -127,13 +138,61 @@ fn main() {
         let sleep_time = loop_start.elapsed();
 
         let stats = format!(
-            "all: {:#} decode: {:#} render: {:#} sleep: {:#}",
+            "frame: {:#} | all: {:#} decode: {:#} render: {:#} sleep: {:#}",
+            frame,
             sleep_time.as_micros(),
             decode_time.as_micros(),
             (render_time - decode_time).as_micros(),
             (sleep_time - render_time).as_micros(),
         );
-        println!("{}\n{}", b, stats);
+        println!("{}{}", b, stats);
     }
     println!("Clean exit.")
+}
+
+fn buf_sample(
+    buf: &[u8],
+    source_dims: &(usize, usize),
+    dim_fac: &(f64, f64),
+    x: f64,
+    y: f64,
+) -> u8 {
+    let (sx, sy) = (
+        (x * dim_fac.0).floor() as usize,
+        (y * dim_fac.1).floor() as usize,
+    );
+    let buf_index = sy * source_dims.0 + sx;
+    if buf_index < (source_dims.0 * source_dims.1) {
+        return buf[buf_index * 3];
+    } else {
+        return 0;
+    }
+}
+
+fn sel_char(vals:&(u8,u8,u8,u8)) -> char {
+    return match vals {
+        
+        (0..=127, 0..=127, 128..=255, 128..=255) => '_',
+        (128..=255, 128..=255, 0..=127, 0..=127) => '^',
+        
+        (0..=127, 128..=255, 0..=127, 128..=255) => '|',
+        (128..=255, 0..=127, 128..=255, 0..=127) => '|',
+        
+        (0..=127, 192..=255, 128..=255, 128..=255) => '/',
+        (128..=255, 128..=255, 128..=255, 0..=127) => '/',
+        (128..=255, 0..=127, 128..=255, 128..=255) => '\\',
+        (128..=255, 128..=255, 0..=127, 128..=255) => '\\',
+        
+        (128..=255, 0..=127, 0..=127, 0..=127) => '\'',
+        (0..=127, 0..=127, 0..=127, 128..=255) => '.',
+        (0..=127, 128..=255, 0..=127, 0..=127) => '\'',
+        (0..=127, 0..=127, 128..=255, 0..=127) => '.',
+        
+        (0..=63, 0..=63, 0..=63, 0..=63) => ' ',
+        (64..=127, 64..=127, 64..=127, 64..=127) => '-',
+        (128..=191, 128..=191, 128..=191, 128..=191) => 'c',
+        (192..=255, 192..=255, 192..=255, 192..=255) => '@',
+        
+        _ => ' '
+    };
 }
