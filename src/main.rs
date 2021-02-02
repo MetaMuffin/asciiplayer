@@ -3,20 +3,22 @@ use std::process::Command;
 use std::process::Stdio;
 
 fn print_help() {
-    println!("asciiplayer:
+    println!(
+        "asciiplayer:
         Usage: asciiplayer <filename>
         asciiplayer depends on ffmpeg, ffprobe and mpv.
     This is free software, licenced under the GNU GPL Version 3.
-    This software is developed at https://www.github.com/MetaMuffin/asciiplayer.");
+    This software is developed at https://www.github.com/MetaMuffin/asciiplayer."
+    );
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
-        return print_help()
+        return print_help();
     }
     if args[1] == "--help" {
-        return print_help()
+        return print_help();
     }
     let vfile = &args[1];
 
@@ -40,7 +42,6 @@ fn main() {
         .expect("Could not read stdout of ffprobe")
         .read_to_string(&mut res_str_buf)
         .expect("Could not convert output of ffprobe to a string.");
-    println!("{}", res_str_buf);
     let dims = res_str_buf
         .split(",")
         .filter(|s| !s.is_empty())
@@ -63,6 +64,7 @@ fn main() {
     Command::new("/bin/mpv")
         .arg("--no-video")
         .arg(String::from(vfile))
+        .arg("--really-quiet")
         .stdout(Stdio::null())
         .stdout(Stdio::null())
         .spawn()
@@ -145,7 +147,7 @@ fn main() {
             (render_time - decode_time).as_micros(),
             (sleep_time - render_time).as_micros(),
         );
-        println!("{}{}", b, stats);
+        println!("{}{}\x1b[1;1H", b, stats);
     }
     println!("Clean exit.")
 }
@@ -169,30 +171,29 @@ fn buf_sample(
     }
 }
 
-fn sel_char(vals:&(u8,u8,u8,u8)) -> char {
+fn sel_char(vals: &(u8, u8, u8, u8)) -> char {
     return match vals {
-        
         (0..=127, 0..=127, 128..=255, 128..=255) => '_',
         (128..=255, 128..=255, 0..=127, 0..=127) => '^',
-        
+
         (0..=127, 128..=255, 0..=127, 128..=255) => '|',
         (128..=255, 0..=127, 128..=255, 0..=127) => '|',
-        
+
         (0..=127, 192..=255, 128..=255, 128..=255) => '/',
         (128..=255, 128..=255, 128..=255, 0..=127) => '/',
         (128..=255, 0..=127, 128..=255, 128..=255) => '\\',
         (128..=255, 128..=255, 0..=127, 128..=255) => '\\',
-        
+
         (128..=255, 0..=127, 0..=127, 0..=127) => '\'',
         (0..=127, 0..=127, 0..=127, 128..=255) => '.',
         (0..=127, 128..=255, 0..=127, 0..=127) => '\'',
         (0..=127, 0..=127, 128..=255, 0..=127) => '.',
-        
+
         (0..=63, 0..=63, 0..=63, 0..=63) => ' ',
         (64..=127, 64..=127, 64..=127, 64..=127) => '-',
         (128..=191, 128..=191, 128..=191, 128..=191) => 'c',
         (192..=255, 192..=255, 192..=255, 192..=255) => '@',
-        
-        _ => ' '
+
+        _ => ' ',
     };
 }
