@@ -49,7 +49,7 @@ fn main() {
         .collect::<Vec<usize>>();
 
     let target_dims = match term_size::dimensions() {
-        Some((w, h)) => (w, h - 2),
+        Some((w, h)) => (w, h - 1),
         None => (80, 24),
     };
     if dims.len() != 2 {
@@ -140,7 +140,7 @@ fn main() {
         let sleep_time = loop_start.elapsed();
 
         let stats = format!(
-            "frame: {:#} | all: {:#} decode: {:#} render: {:#} sleep: {:#}",
+            "frame: {:#} | all: {:#} decode: {:#} render: {:#} sleep: {:#}   ",
             frame,
             sleep_time.as_micros(),
             decode_time.as_micros(),
