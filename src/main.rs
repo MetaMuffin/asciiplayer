@@ -1,26 +1,61 @@
 use std::io::Read;
+use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
 
 fn print_help() {
     println!(
         "asciiplayer:
-        Usage: asciiplayer <filename>
+        Usage:
+            asciiplayer play <filename>
+            asciiplayer render <filename> <rows>,<cols>
+
         asciiplayer depends on ffmpeg, ffprobe and mpv.
-    This is free software, licenced under the GNU GPL Version 3.
-    This software is developed at https://www.github.com/MetaMuffin/asciiplayer."
+        This is free software, licenced under the GNU GPL Version 3.
+        This software is developed at https://www.github.com/MetaMuffin/asciiplayer."
     );
+}
+
+fn parse_dims(strbuf: String) -> (usize, usize) {
+    let dims = strbuf
+        .split(",")
+        .filter(|s| !s.is_empty())
+        .map(|s| s.trim().parse::<usize>().unwrap())
+        .collect::<Vec<usize>>();
+
+    if dims.len() != 2 {
+        panic!(format!(
+            "Could not parse video dimension: {:?}__{:?}",
+            dims, strbuf
+        ))
+    }
+    return (dims[0], dims[1]);
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 2 {
+    if args.len() < 2 {
         return print_help();
     }
     if args[1] == "--help" {
         return print_help();
     }
-    let vfile = &args[1];
+    let mut file_output = false;
+    let mut arg_dims = (0, 0);
+    match args[1].as_str() {
+        "play" => file_output = false,
+        "render" => {
+            file_output = true;
+            arg_dims = parse_dims(String::from(&args[3]));
+        }
+        _ => return print_help(),
+    }
+    let vfile = &args[2];
+
+    let mut file = None;
+    if file_output {
+        file = Some(std::fs::File::create("render").expect("Could not create render file"));
+    }
 
     let ffprobe = Command::new("/bin/ffprobe")
         .arg("-v")
@@ -42,33 +77,27 @@ fn main() {
         .expect("Could not read stdout of ffprobe")
         .read_to_string(&mut res_str_buf)
         .expect("Could not convert output of ffprobe to a string.");
-    let dims = res_str_buf
-        .split(",")
-        .filter(|s| !s.is_empty())
-        .map(|s| s.trim().parse::<usize>().unwrap())
-        .collect::<Vec<usize>>();
 
-    let target_dims = match term_size::dimensions() {
-        Some((w, h)) => (w, h - 1),
-        None => (80, 24),
+    let target_dims = match file_output {
+        true => arg_dims,
+        false => match term_size::dimensions() {
+            Some((w, h)) => (w, h - 1),
+            None => (80, 24),
+        },
     };
-    if dims.len() != 2 {
-        panic!(format!(
-            "Could not parse video dimension of ffprobe: {:?}__{:?}",
-            dims, res_str_buf
-        ))
-    }
-    let source_dims = (dims[0], dims[1]);
-    let fps = 30;
+    let source_dims = parse_dims(res_str_buf);
 
-    Command::new("/bin/mpv")
-        .arg("--no-video")
-        .arg(String::from(vfile))
-        .arg("--really-quiet")
-        .stdout(Stdio::null())
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Could not start mpv");
+    let fps = 30;
+    if !file_output {
+        Command::new("/bin/mpv")
+            .arg("--no-video")
+            .arg(String::from(vfile))
+            .arg("--really-quiet")
+            .stdout(Stdio::null())
+            .stdout(Stdio::null())
+            .spawn()
+            .expect("Could not start mpv");
+    }
 
     let mut ffmpeg = Command::new("/bin/ffmpeg")
         .arg("-i")
@@ -127,12 +156,14 @@ fn main() {
                 );
                 b.push(sel_char(&vals));
             }
-            b += "\n";
+            if !file_output {
+                b += "\n"
+            };
         }
         let render_time = loop_start.elapsed();
 
         let sleep_needed = (frame * nanos_per_frame) - video_start.elapsed().as_nanos() as i64;
-        if sleep_needed > 0 {
+        if sleep_needed > 0 && !file_output {
             std::thread::sleep(std::time::Duration::from_nanos(sleep_needed as u64));
         }
         frame += 1;
@@ -147,7 +178,13 @@ fn main() {
             (render_time - decode_time).as_micros(),
             (sleep_time - render_time).as_micros(),
         );
-        println!("{}{}\x1b[1;1H", b, stats);
+        if !file_output {
+            println!("{}{}\x1b[1;1H", b, stats);
+        } else if let Some(f) = &mut file {
+            f.write_all(b.as_bytes())
+                .expect("Could not write to render file.");
+            print!("\r{}", stats);
+        }
     }
     println!("Clean exit.")
 }

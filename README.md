@@ -5,8 +5,15 @@ Works nice with "bad apple" btw.
 
 ## Usage
 
-Use `cargo` (rust's package manager) to build, the first argument decides what file to play.
+Use `cargo` (rust's package manager) to build.
 If you use GNU plus Linux you may also try to use the install script to create a release build and install it to `~/.local/bin/asciiplayer`
+
+Syntax:
+```
+asciiplayer play <filename>
+asciiplayer render <filename> <rows>,<cols>
+
+```
 
 ## Licence
 
