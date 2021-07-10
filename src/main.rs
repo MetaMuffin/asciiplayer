@@ -36,6 +36,13 @@ fn main() {
                 .help("dont display color"),
         )
         .arg(
+            Arg::with_name("fps")
+                .short("r")
+                .long("fps")
+                .takes_value(true)
+                .help("specify frames per second to render"),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .multiple(true)
@@ -68,7 +75,7 @@ fn main() {
         .arg("-i")
         .arg(String::from(filename))
         .arg("-filter:v")
-        .arg("fps=fps=30")
+        .arg(format!("fps=fps={}", fps).as_str())
         .arg("-f")
         .arg("image2pipe")
         .arg("-pix_fmt")
