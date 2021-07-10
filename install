@@ -1,4 +1,4 @@
 #!/bin/sh
 cargo build --release
 mkdir -p ~/.local/bin
-sudo cp -f ./target/release/asciiplayer ~/.local/bin/asciiplayer
+cp -f ./target/release/asciiplayer ~/.local/bin/asciiplayer
