@@ -50,6 +50,13 @@ fn main() {
                 .help("specify frames per second to render"),
         )
         .arg(
+            Arg::with_name("black-background")
+                .short("b")
+                .long("black-background") 
+                .takes_value(false)
+                .help("set the terminal background to opaque black - usefull for transparent terminals"),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .multiple(true)
@@ -112,6 +119,10 @@ fn main() {
 
     let do_color = !args.is_present("monochrome");
 
+    if args.is_present("black-background") {
+        print!("\x1b[48;2;1;1;1m");
+    }
+
     let video_start = std::time::Instant::now();
     let mut frame = 0;
     loop {
@@ -161,7 +172,7 @@ fn main() {
         let sleep_time = loop_start.elapsed();
 
         if verbosity > 0 {
-            frame_string += "\x1b[0m";
+            frame_string += "\x1b[38;2;255;255;255m";
             frame_string += format!(
                 " frame: {:#} | all: {:#} decode: {:#} render: {:#} sleep: {:#}   ",
                 frame,
