@@ -36,6 +36,13 @@ fn main() {
                 .help("dont display color"),
         )
         .arg(
+            Arg::with_name("silent")
+                .short("s")
+                .long("silent")
+                .help("dont spawn mpv to play sound")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("fps")
                 .short("r")
                 .long("fps")
@@ -62,14 +69,16 @@ fn main() {
         .parse::<i64>()
         .expect("Invalid fps value");
 
-    Command::new("/bin/mpv")
-        .arg("--no-video")
-        .arg(String::from(filename))
-        .arg("--really-quiet")
-        .stdout(Stdio::null())
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Could not start mpv");
+    if !args.is_present("silent") {
+        Command::new("/bin/mpv")
+            .arg("--no-video")
+            .arg(String::from(filename))
+            .arg("--really-quiet")
+            .stdout(Stdio::null())
+            .stdout(Stdio::null())
+            .spawn()
+            .expect("Could not start mpv");
+    }
 
     let mut ffmpeg = Command::new("/bin/ffmpeg")
         .arg("-i")
