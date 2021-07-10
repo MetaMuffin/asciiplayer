@@ -1,19 +1,13 @@
 # asciiplayer
 
-A simple rust program to play monochrome video in a terminal.
-Works nice with "bad apple" btw.
+A simple rust program to play video in a terminal with ascii art.
+Originally created to play the music video of "bad apple".
 
 ## Usage
 
-Use `cargo` (rust's package manager) to build.
-If you use GNU plus Linux you may also try to use the install script to create a release build and install it to `~/.local/bin/asciiplayer`
-
-Syntax:
-```
-asciiplayer play <filename>
-asciiplayer render <filename> <rows>,<cols>
-
-```
+Use `cargo build` to build.
+If you use GNU plus Linux you can also try to use the install script (`./install`)
+Usage information is visible with the `--help` flag.
 
 ## Licence
 
