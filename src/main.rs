@@ -183,7 +183,7 @@ fn main() {
             )
             .as_str();
         }
-        println!("{}\x1b[1;1H", frame_string);
+        print!("{}\x1b[1;1H", frame_string);
 
         frame += 1;
     }
